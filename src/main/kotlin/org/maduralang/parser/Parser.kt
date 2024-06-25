@@ -10,7 +10,7 @@ class Parser {
         return readFile(tokens)
     }
 
-    private fun readFile(tokens: Iterator<Token>): File {
+    private fun readFile(tokens: Iterator<Token>): FileNode {
         val definitions = ArrayList<Node>()
 
         while (tokens.hasNext()) {
@@ -23,7 +23,7 @@ class Parser {
             definitions.add(definition)
         }
 
-        return File(definitions)
+        return FileNode(definitions)
     }
 
     private fun readDefinition(token: KeywordToken, tokens: Iterator<Token>): Node {
@@ -33,7 +33,7 @@ class Parser {
         }
     }
 
-    private fun readFunctions(token: KeywordToken, tokens: Iterator<Token>): Function {
+    private fun readFunctions(token: KeywordToken, tokens: Iterator<Token>): FunctionNode {
         val name = matchType(tokens.next(), NameToken::class.java)
         match(tokens.next(), "(")
         val parameters = collect(tokens, delimiter = ")", separator = ",", ::readParameter)
@@ -48,17 +48,17 @@ class Parser {
         val body = when (token.data) {
             "{" -> collect(tokens, "}", null, ::readStatement)
             "=>", "->" -> listOf(readStatement(tokens.next(), tokens))
-            else -> throw InvalidSyntaxException("syntax error", token)
+            else -> emptyList()
         }
 
-        return Function(name, parameters, type, body)
+        return FunctionNode(name, parameters, type, body)
     }
 
-    private fun readParameter(token: Token, tokens: Iterator<Token>): Parameter {
+    private fun readParameter(token: Token, tokens: Iterator<Token>): ParameterNode {
         val name = matchType(token, NameToken::class.java)
         match(tokens.next(), ":")
         val type = readType(tokens)
-        return Parameter(name = name, type = type)
+        return ParameterNode(name = name, type = type)
     }
 
     private fun readType(tokens: Iterator<Token>): NameToken =
@@ -72,7 +72,7 @@ class Parser {
 
     private fun readExpression(token: Token, tokens: Iterator<Token>): Node =
         when (token) {
-            is NumberToken, is StringToken -> Constant(token)
+            is NumberToken, is StringToken -> ConstantNode(token)
             is NameToken -> readCall(token, tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
@@ -80,7 +80,7 @@ class Parser {
     private fun readCall(name: NameToken, tokens: Iterator<Token>): Node {
         match(tokens.next(), "(")
         val arguments = collect(tokens, delimiter = ")", separator = ",", ::readExpression)
-        return Call(name, arguments)
+        return CallNode(name, arguments)
     }
 
     private fun match(token: Token, expected: String): Token =
