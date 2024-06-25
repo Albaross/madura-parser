@@ -1,7 +1,7 @@
 package org.maduralang.parser
 
 import org.maduralang.lexer.*
-import org.maduralang.lexer.Keyword.*
+import org.maduralang.lexer.KeywordToken.*
 
 class Parser {
 
@@ -27,7 +27,7 @@ class Parser {
     }
 
     private fun readDefinition(token: KeywordToken, tokens: Iterator<Token>): Node {
-        when (token.asKeyword()) {
+        when (token) {
             FN, FUN, FUNC -> return readFunctions(token, tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
