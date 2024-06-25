@@ -1,6 +1,9 @@
 package org.maduralang.parser
 
-import org.maduralang.lexer.*
+import org.maduralang.lexer.KeywordToken
+import org.maduralang.lexer.NameToken
+import org.maduralang.lexer.StringToken
+import org.maduralang.lexer.SymbolToken
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -27,13 +30,13 @@ internal class ParserTest {
         val helloWorld = listOf(
             KeywordToken.FN,
             NameToken("main"),
-            SymbolToken("("),
-            SymbolToken(")"),
+            SymbolToken('('),
+            SymbolToken(')'),
             SymbolToken("=>"),
             NameToken("println"),
-            SymbolToken("("),
+            SymbolToken('('),
             StringToken("\"Hello world\""),
-            SymbolToken(")")
+            SymbolToken(')')
         )
         val result = parser.parse(helloWorld)
         assertEquals(
@@ -42,6 +45,38 @@ internal class ParserTest {
                     FunctionNode(
                         "main",
                         body = listOf(CallNode("println", arguments = listOf(ConstantNode("\"Hello world\""))))
+                    )
+                )
+            ), result
+        )
+    }
+
+    @Test
+    fun `should parse nested function calls`() {
+        val nested = listOf(
+            KeywordToken.FN,
+            NameToken("main"),
+            SymbolToken('('),
+            SymbolToken(')'),
+            SymbolToken("=>"),
+            NameToken("add"),
+            SymbolToken('('),
+            NameToken("one"),
+            SymbolToken('('),
+            SymbolToken(')'),
+            SymbolToken(','),
+            NameToken("two"),
+            SymbolToken('('),
+            SymbolToken(')'),
+            SymbolToken(')')
+        )
+        val result = parser.parse(nested)
+        assertEquals(
+            FileNode(
+                definitions = listOf(
+                    FunctionNode(
+                        "main",
+                        body = listOf(CallNode("add", arguments = listOf(CallNode("one"), CallNode("two"))))
                     )
                 )
             ), result
