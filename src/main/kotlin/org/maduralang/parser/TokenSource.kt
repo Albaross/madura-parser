@@ -45,6 +45,9 @@ interface TokenSource: Iterator<Token> {
     }
 }
 
+fun sourceOf(vararg tokens: Token): TokenSource =
+    ListTokenSource(tokens.toList())
+
 class ListTokenSource(private val tokens: List<Token>) : TokenSource {
     private var index = 0
 

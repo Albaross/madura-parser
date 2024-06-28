@@ -5,13 +5,7 @@ import org.maduralang.lexer.KeywordToken.*
 
 class Parser {
 
-    fun parse(tokens: List<Token>): Node =
-        parse(ListTokenSource(tokens))
-
-    fun parse(tokens: TokenSource): Node =
-        readFile(tokens)
-
-    private fun readFile(tokens: TokenSource): FileNode {
+    fun readFile(tokens: TokenSource): FileNode {
         val definitions = ArrayList<DefinitionNode>()
 
         while (tokens.hasNext()) {
@@ -37,7 +31,7 @@ class Parser {
         }
     }
 
-    private fun readVariableDeclaration(tokens: TokenSource): VariableDeclarationNode {
+    fun readVariableDeclaration(tokens: TokenSource): VariableDeclarationNode {
         val mutable = (tokens.match(KeywordToken::class) != CONST)
         val name = tokens.match(NameToken::class)
         val type = if (tokens.test(":")) readType(tokens) else null
@@ -46,7 +40,7 @@ class Parser {
         return VariableDeclarationNode(name, type, value, mutable)
     }
 
-    private fun readFunctionDefinition(tokens: TokenSource): FunctionDefinitionNode {
+    fun readFunctionDefinition(tokens: TokenSource): FunctionDefinitionNode {
         tokens.next()
         val name = tokens.match(NameToken::class)
         tokens.match("(")
@@ -79,7 +73,7 @@ class Parser {
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    private fun readExpression(tokens: TokenSource): ExpressionNode =
+    fun readExpression(tokens: TokenSource): ExpressionNode =
         when (val token = tokens.lookahead()) {
             is NumberToken, is StringToken, TRUE, FALSE -> ConstantNode(tokens.next())
             THIS, SUPER -> AccessNode(tokens.next())
@@ -87,7 +81,7 @@ class Parser {
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    private fun readAccessOrCall(tokens: TokenSource): ExpressionNode {
+    fun readAccessOrCall(tokens: TokenSource): ExpressionNode {
         val name = tokens.match(NameToken::class)
         if (tokens.test("(")) {
             val arguments = tokens.collect(delimiter = ")", separator = ",") { readExpression(it) }
