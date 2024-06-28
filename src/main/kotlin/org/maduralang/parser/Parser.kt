@@ -5,17 +5,19 @@ import org.maduralang.lexer.KeywordToken.*
 
 class Parser {
 
-    fun parse(input: List<Token>): Node {
-        return TokenSource(input.filter { it !is CommentToken }).readFile()
-    }
+    fun parse(tokens: List<Token>): Node =
+        parse(ListTokenSource(tokens))
 
-    private fun TokenSource.readFile(): FileNode {
+    fun parse(tokens: TokenSource): Node =
+        readFile(tokens)
+
+    private fun readFile(tokens: TokenSource): FileNode {
         val definitions = ArrayList<Node>()
 
-        while (hasNext()) {
-            val definition = when (val token = lookahead()) {
-                is KeywordToken -> readDefinition()
-                is AnnotationToken -> continue
+        while (tokens.hasNext()) {
+            val definition = when (val token = tokens.lookahead()) {
+                is KeywordToken -> readDefinition(tokens)
+                is AnnotationToken, is CommentToken -> continue
                 else -> throw InvalidSyntaxException("syntax error", token)
             }
 
@@ -25,78 +27,56 @@ class Parser {
         return FileNode(definitions)
     }
 
-    private fun TokenSource.readDefinition(): Node {
-        when (val token = lookahead()) {
-            FN, FUN, FUNC -> return readFunctions()
+    private fun readDefinition(tokens: TokenSource): Node {
+        when (val token = tokens.lookahead()) {
+            FN, FUN, FUNC -> return readFunctions(tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
     }
 
-    private fun TokenSource.readFunctions(): FunctionNode {
-        skip()
-        val name = match(NameToken::class)
-        match("(")
-        val parameters = collect(delimiter = ")", separator = ",") { readParameter() }
-        val type = if (test(":")) readType() else null
+    private fun readFunctions(tokens: TokenSource): FunctionNode {
+        tokens.next()
+        val name = tokens.match(NameToken::class)
+        tokens.match("(")
+        val parameters = tokens.collect(delimiter = ")", separator = ",") { readParameter(it) }
+        val type = if (tokens.test(":")) readType(tokens) else null
 
-        val body = when (next().data) {
-            "{" -> collect(delimiter = "}") { readStatement() }
-            "=>", "->" -> listOf(readStatement())
+        val body = when (tokens.next().data) {
+            "{" -> tokens.collect(delimiter = "}") { readStatement(it) }
+            "=>", "->" -> listOf(readStatement(tokens))
             else -> emptyList()
         }
 
         return FunctionNode(name, parameters, type, body)
     }
 
-    private fun TokenSource.readParameter(): ParameterNode {
-        val name = match(NameToken::class)
-        match(":")
-        val type = readType()
+    private fun readParameter(tokens: TokenSource): ParameterNode {
+        val name = tokens.match(NameToken::class)
+        tokens.match(":")
+        val type = readType(tokens)
         return ParameterNode(name = name, type = type)
     }
 
-    private fun TokenSource.readType(): NameToken =
-        match(NameToken::class)
+    private fun readType(tokens: TokenSource): NameToken =
+        tokens.match(NameToken::class)
 
-    private fun TokenSource.readStatement(): Node =
-        when (val token = lookahead()) {
-            is NameToken -> readCall()
+    private fun readStatement(tokens: TokenSource): Node =
+        when (val token = tokens.lookahead()) {
+            is NameToken -> readCall(tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    private fun TokenSource.readExpression(): Node =
-        when (val token = lookahead()) {
-            is NumberToken, is StringToken -> ConstantNode(next())
-            is NameToken -> readCall()
+    private fun readExpression(tokens: TokenSource): Node =
+        when (val token = tokens.lookahead()) {
+            is NumberToken, is StringToken -> ConstantNode(tokens.next())
+            is NameToken -> readCall(tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    private fun TokenSource.readCall(): Node {
-        val name = match(NameToken::class)
-        match("(")
-        val arguments = collect(delimiter = ")", separator = ",") { readExpression() }
+    private fun readCall(tokens: TokenSource): Node {
+        val name = tokens.match(NameToken::class)
+        tokens.match("(")
+        val arguments = tokens.collect(delimiter = ")", separator = ",") { readExpression(it) }
         return CallNode(name, arguments)
-    }
-
-    private fun <T> TokenSource.collect(
-        delimiter: String,
-        separator: String? = null,
-        read: () -> T
-    ): List<T> {
-        val result = ArrayList<T>()
-        var counter = 0
-
-        while (hasNext()) {
-            if (test(delimiter))
-                return result
-
-            if (separator != null && counter > 0)
-                match(separator)
-
-            result.add(read())
-            counter++
-        }
-
-        return result
     }
 }

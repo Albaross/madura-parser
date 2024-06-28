@@ -1,18 +1,16 @@
 package org.maduralang.parser
 
 import org.maduralang.lexer.Token
+import java.io.EOFException
 import kotlin.reflect.KClass
 
-class TokenSource(private val tokens: List<Token>) {
-    private var index = 0
+interface TokenSource: Iterator<Token> {
 
-    fun skip() {
-        index++
-    }
+    fun lookahead(): Token
 
     fun test(possibly: String): Boolean {
         val result = lookahead().data == possibly
-        if (result) index++
+        if (result) next()
         return result
     }
 
@@ -22,18 +20,40 @@ class TokenSource(private val tokens: List<Token>) {
         else throw InvalidSyntaxException("syntax error", token)
     }
 
-    inline fun <reified T : Token> match(type: KClass<T>): T {
+    fun <T : Token> match(type: KClass<T>): T {
         val token = next()
-        if (token is T) return token
+        if (type.isInstance(token)) return token as T
         else throw InvalidSyntaxException("syntax error", token)
     }
 
-    fun next(): Token =
-        if (hasNext()) tokens[index++] else throw NoSuchElementException()
+    fun <T> collect(delimiter: String, separator: String? = null, read: (TokenSource) -> T): List<T> {
+        val result = ArrayList<T>()
+        var counter = 0
 
-    fun lookahead(offset: Int = 0): Token =
-        if (index + offset < tokens.size) tokens[index + offset] else throw NoSuchElementException()
+        while (hasNext()) {
+            if (test(delimiter))
+                return result
 
-    fun hasNext(): Boolean =
+            if (separator != null && counter > 0)
+                match(separator)
+
+            result.add(read(this))
+            counter++
+        }
+
+        throw EOFException()
+    }
+}
+
+class ListTokenSource(private val tokens: List<Token>) : TokenSource {
+    private var index = 0
+
+    override fun hasNext(): Boolean =
         index < tokens.size
+
+    override fun lookahead(): Token =
+        if (hasNext()) tokens[index] else throw NoSuchElementException()
+
+    override fun next(): Token =
+        if (hasNext()) tokens[index++] else throw NoSuchElementException()
 }
