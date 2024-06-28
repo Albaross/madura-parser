@@ -9,7 +9,7 @@ interface TokenSource: Iterator<Token> {
     fun lookahead(): Token
 
     fun test(possibly: String): Boolean {
-        val result = lookahead().data == possibly
+        val result = hasNext() && (lookahead().data == possibly)
         if (result) next()
         return result
     }
