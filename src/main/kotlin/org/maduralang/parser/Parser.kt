@@ -6,6 +6,7 @@ import org.maduralang.parser.expr.Constant
 import org.maduralang.parser.expr.Expression
 import org.maduralang.parser.expr.FunctionCall
 import org.maduralang.parser.expr.Id
+import org.maduralang.parser.stmt.Return
 import org.maduralang.parser.stmt.Statement
 
 class Parser {
@@ -28,10 +29,10 @@ class Parser {
 
     private fun readDefinition(tokens: TokenSource): DefinitionNode {
         return when (val token = tokens.lookahead()) {
-            PUBLIC, PRIVATE, PROTECTED, SHARED -> TODO("Access modifier '$token' not yet implemented")
+            PUBLIC, PRIVATE, PROTECTED, SHARED -> TODO("Access modifier not yet implemented: $token")
             LET, VAR, CONST -> readVariableDeclaration(tokens)
             FN, FUN, FUNC -> readFunctionDefinition(tokens)
-            CLASS, ENUM -> TODO("class definition '$token' not yet implemented")
+            CLASS, ENUM -> TODO("Class definition not yet implemented: $token")
             else -> throw InvalidSyntaxException("syntax error", token)
         }
     }
@@ -73,18 +74,24 @@ class Parser {
 
     private fun readStatement(tokens: TokenSource): Statement =
         when (val token = tokens.lookahead()) {
-            is NameToken -> readIdOrFunctionCall(tokens)
-            RETURN -> readExpression(tokens)
+            is NameToken -> readExpression(tokens)
+            IF, ELSE, MATCH, FOR, WHILE, DO, CONTINUE, BREAK -> TODO("Statement not yet implemented: $token")
+            RETURN -> Return(readExpression(tokens))
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    fun readExpression(tokens: TokenSource): Expression =
-        when (val token = tokens.lookahead()) {
-            is NumberToken, is StringToken, TRUE, FALSE -> Constant(tokens.next())
-            THIS, SUPER -> Id(tokens.next() as WordToken)
-            is NameToken -> readIdOrFunctionCall(tokens)
-            else -> throw InvalidSyntaxException("syntax error", token)
-        }
+    fun readExpression(tokens: TokenSource): Expression {
+        val expr = readName(tokens)
+
+        return expr
+    }
+
+    private fun readName(tokens: TokenSource) = when (val token = tokens.lookahead()) {
+        is NumberToken, is StringToken, TRUE, FALSE -> Constant(tokens.next())
+        THIS, SUPER -> Id(tokens.next() as WordToken)
+        is NameToken -> readIdOrFunctionCall(tokens)
+        else -> throw InvalidSyntaxException("syntax error", token)
+    }
 
     fun readIdOrFunctionCall(tokens: TokenSource): Expression {
         val name = tokens.match(NameToken::class)
