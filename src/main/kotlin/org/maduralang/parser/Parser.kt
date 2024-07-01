@@ -2,6 +2,11 @@ package org.maduralang.parser
 
 import org.maduralang.lexer.*
 import org.maduralang.lexer.KeywordToken.*
+import org.maduralang.parser.expr.Constant
+import org.maduralang.parser.expr.Expression
+import org.maduralang.parser.expr.FunctionCall
+import org.maduralang.parser.expr.Id
+import org.maduralang.parser.stmt.Statement
 
 class Parser {
 
@@ -66,29 +71,29 @@ class Parser {
     private fun readType(tokens: TokenSource): NameToken =
         tokens.match(NameToken::class)
 
-    private fun readStatement(tokens: TokenSource): StatementNode =
+    private fun readStatement(tokens: TokenSource): Statement =
         when (val token = tokens.lookahead()) {
-            is NameToken -> readAccessOrCall(tokens)
+            is NameToken -> readIdOrFunctionCall(tokens)
             RETURN -> readExpression(tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    fun readExpression(tokens: TokenSource): ExpressionNode =
+    fun readExpression(tokens: TokenSource): Expression =
         when (val token = tokens.lookahead()) {
-            is NumberToken, is StringToken, TRUE, FALSE -> ConstantNode(tokens.next())
-            THIS, SUPER -> AccessNode(tokens.next())
-            is NameToken -> readAccessOrCall(tokens)
+            is NumberToken, is StringToken, TRUE, FALSE -> Constant(tokens.next())
+            THIS, SUPER -> Id(tokens.next() as WordToken)
+            is NameToken -> readIdOrFunctionCall(tokens)
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    fun readAccessOrCall(tokens: TokenSource): ExpressionNode {
+    fun readIdOrFunctionCall(tokens: TokenSource): Expression {
         val name = tokens.match(NameToken::class)
         if (tokens.test("(")) {
             val arguments = tokens.collect(delimiter = ")", separator = ",") { readExpression(it) }
             tokens.test(";")
-            return CallNode(name, arguments)
+            return FunctionCall(name, arguments)
         }
         tokens.test(";")
-        return AccessNode(name)
+        return Id(name)
     }
 }
