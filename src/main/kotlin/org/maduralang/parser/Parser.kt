@@ -2,10 +2,7 @@ package org.maduralang.parser
 
 import org.maduralang.lexer.*
 import org.maduralang.lexer.KeywordToken.*
-import org.maduralang.parser.expr.Constant
-import org.maduralang.parser.expr.Expression
-import org.maduralang.parser.expr.FunctionCall
-import org.maduralang.parser.expr.Id
+import org.maduralang.parser.expr.*
 import org.maduralang.parser.stmt.Return
 import org.maduralang.parser.stmt.Statement
 
@@ -74,19 +71,32 @@ class Parser {
 
     private fun readStatement(tokens: TokenSource): Statement =
         when (val token = tokens.lookahead()) {
-            is NameToken -> readExpression(tokens)
+            is NameToken, is NumberToken, is StringToken, TRUE, FALSE, THIS, SUPER -> readExpression(tokens)
             IF, ELSE, MATCH, FOR, WHILE, DO, CONTINUE, BREAK -> TODO("Statement not yet implemented: $token")
             RETURN -> Return(readExpression(tokens))
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    fun readExpression(tokens: TokenSource): Expression {
-        val expr = readName(tokens)
+    fun readExpression(tokens: TokenSource): Expression =
+        binary(tokens, ::Or, setOf("||", "|")) {
+            binary(tokens, ::And, setOf("&&", "&")) {
+                binary(tokens, ::Relation, setOf("==", "!=", "===", "!==")) {
+                    binary(tokens, ::Relation, setOf("<", ">", "<=", ">=")) {
+                        binary(tokens, ::Arithmetic, setOf("+", "-")) {
+                            binary(tokens, ::Arithmetic, setOf("*", "/", "%")) {
+                                binary(tokens, ::Arithmetic, setOf("^")) {
+                                    binary(tokens, ::ChainCall, setOf(".", "?.", "::")) {
+                                        readElement(tokens)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-        return expr
-    }
-
-    private fun readName(tokens: TokenSource) = when (val token = tokens.lookahead()) {
+    private fun readElement(tokens: TokenSource) = when (val token = tokens.lookahead()) {
         is NumberToken, is StringToken, TRUE, FALSE -> Constant(tokens.next())
         THIS, SUPER -> Id(tokens.next() as WordToken)
         is NameToken -> readIdOrFunctionCall(tokens)
@@ -102,5 +112,19 @@ class Parser {
         }
         tokens.test(";")
         return Id(name)
+    }
+
+    private fun binary(
+        tokens: TokenSource,
+        operation: (Token, Expression, Expression) -> Expression,
+        symbols: Set<String>,
+        element: (TokenSource) -> Expression
+    ): Expression {
+
+        var expr = element(tokens) //
+        while (tokens.test(consume = false) { it.data in symbols })
+            expr = operation(tokens.next(), expr, element(tokens))
+
+        return expr
     }
 }

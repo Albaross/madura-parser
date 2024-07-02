@@ -14,7 +14,7 @@ data class And(
     override val expr2: Expression
 ) : Logical {
 
-    override fun toString(): String = "$expr1 $op $expr2"
+    override fun toString(): String = "$expr1 ${op.data} $expr2"
 }
 
 data class Or(
@@ -23,7 +23,7 @@ data class Or(
     override val expr2: Expression
 ) : Logical {
 
-    override fun toString(): String = "$expr1 $op $expr2"
+    override fun toString(): String = "$expr1 ${op.data} $expr2"
 }
 
 data class Not(override val op: Token, val expr: Expression) : Logical {
@@ -31,7 +31,7 @@ data class Not(override val op: Token, val expr: Expression) : Logical {
     override val expr1: Expression get() = expr
     override val expr2: Expression get() = expr
 
-    override fun toString(): String = "$op $expr"
+    override fun toString(): String = "${op.data} $expr"
 }
 
 data class Relation(
@@ -40,5 +40,5 @@ data class Relation(
     override val expr2: Expression
 ) : Logical {
 
-    override fun toString(): String = "$expr1 $op $expr2"
+    override fun toString(): String = "$expr1 ${op.data} $expr2"
 }

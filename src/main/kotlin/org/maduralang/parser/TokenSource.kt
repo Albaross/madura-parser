@@ -4,21 +4,27 @@ import org.maduralang.lexer.Token
 import java.io.EOFException
 import kotlin.reflect.KClass
 
-interface TokenSource: Iterator<Token> {
+interface TokenSource : Iterator<Token> {
 
     fun lookahead(): Token
 
-    fun test(possibly: String): Boolean {
-        val result = hasNext() && (lookahead().data == possibly)
-        if (result) next()
+    fun test(consume: Boolean = true, predicate: (Token) -> Boolean): Boolean {
+        val result = hasNext() && predicate(lookahead())
+        if (consume && result) next()
         return result
     }
 
-    fun match(expected: String): Token {
+    fun test(possibly: String): Boolean =
+        test { it.data == possibly }
+
+    fun match(predicate: (Token) -> Boolean): Token {
         val token = next()
-        if (token.data == expected) return token
+        if (predicate(token)) return token
         else throw InvalidSyntaxException("syntax error", token)
     }
+
+    fun match(expected: String): Token =
+        match { it.data == expected }
 
     fun <T : Token> match(type: KClass<T>): T {
         val token = next()
