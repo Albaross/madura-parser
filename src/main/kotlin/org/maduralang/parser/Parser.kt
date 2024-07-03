@@ -73,7 +73,11 @@ class Parser {
         when (val token = tokens.lookahead()) {
             is NameToken, is NumberToken, is StringToken, TRUE, FALSE, THIS, SUPER -> readExpression(tokens)
             IF, ELSE, MATCH, FOR, WHILE, DO, CONTINUE, BREAK -> TODO("Statement not yet implemented: $token")
-            RETURN -> Return(readExpression(tokens))
+            RETURN -> {
+                tokens.next()
+                Return(readExpression(tokens))
+            }
+
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 

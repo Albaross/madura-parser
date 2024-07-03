@@ -14,8 +14,8 @@ interface TokenSource : Iterator<Token> {
         return result
     }
 
-    fun test(possibly: String): Boolean =
-        test { it.data == possibly }
+    fun test(possibly: String, consume: Boolean = true): Boolean =
+        test(consume) { it.data == possibly }
 
     fun match(predicate: (Token) -> Boolean): Token {
         val token = next()
