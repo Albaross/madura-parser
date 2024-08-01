@@ -1,9 +1,6 @@
 package org.maduralang.parser
 
 import org.maduralang.lexer.*
-import org.maduralang.parser.expr.Constant
-import org.maduralang.parser.expr.FunctionCall
-import org.maduralang.parser.expr.Id
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -20,7 +17,7 @@ internal class ParserTest {
             NumberToken("3.14")
         )
         val result = parser.readVariableDeclaration(emptyMain)
-        assertEquals(VariableDeclarationNode(name = "PI", expression = Constant(3.14)), result)
+        assertEquals(variableDeclaration(name = "PI", expression = constant(3.14)), result)
     }
 
     @Test
@@ -35,10 +32,10 @@ internal class ParserTest {
         )
         val result = parser.readVariableDeclaration(constant)
         assertEquals(
-            VariableDeclarationNode(
+            variableDeclaration(
                 name = "enabled",
                 type = "Bool",
-                expression = Constant(true),
+                expression = constant(true),
                 mutable = true
             ), result
         )
@@ -55,7 +52,7 @@ internal class ParserTest {
             SymbolToken('}')
         )
         val result = parser.readFile(emptyMain)
-        assertEquals(FileNode(definitions = listOf(FunctionDefinitionNode("main", body = emptyList()))), result)
+        assertEquals(FileNode(definitions = listOf(functionDefinition("main", body = emptyList()))), result)
     }
 
     @Test
@@ -67,7 +64,7 @@ internal class ParserTest {
             SymbolToken(')'),
         )
         val result = parser.readIdOrFunctionCall(double)
-        assertEquals(FunctionCall("double", arguments = listOf(Id("x"))), result)
+        assertEquals(functionCall("double", arguments = listOf(id("x"))), result)
     }
 
     @Test
@@ -79,9 +76,7 @@ internal class ParserTest {
             SymbolToken(';')
         )
         val result = parser.readIdOrFunctionCall(run)
-        assertEquals(
-            FunctionCall("run"), result
-        )
+        assertEquals(functionCall("run"), result)
     }
 
     @Test
@@ -99,7 +94,7 @@ internal class ParserTest {
             SymbolToken(')')
         )
         val result = parser.readIdOrFunctionCall(nested)
-        assertEquals(FunctionCall("add", arguments = listOf(FunctionCall("one"), FunctionCall("two"))), result)
+        assertEquals(functionCall("add", arguments = listOf(functionCall("one"), functionCall("two"))), result)
     }
 
     @Test
@@ -119,9 +114,9 @@ internal class ParserTest {
         assertEquals(
             FileNode(
                 definitions = listOf(
-                    FunctionDefinitionNode(
+                    functionDefinition(
                         "main",
-                        body = FunctionCall("println", arguments = listOf(Constant("\"Hello world\"")))
+                        body = functionCall("println", arguments = listOf(constant("\"Hello world\"")))
                     )
                 )
             ), result

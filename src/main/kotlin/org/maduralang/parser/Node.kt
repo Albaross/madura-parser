@@ -15,39 +15,16 @@ data class VariableDeclarationNode(
     val type: NameToken? = null,
     val expression: Expression? = null,
     val mutable: Boolean = false
-) : DefinitionNode, Statement {
-    constructor(
-        name: String,
-        type: String? = null,
-        expression: Expression? = null,
-        mutable: Boolean = false
-    ) : this(NameToken(name), type?.let { NameToken(it) }, expression, mutable)
-}
+) : DefinitionNode, Statement
 
 data class FunctionDefinitionNode(
     val name: NameToken,
     val parameters: List<ParameterNode> = emptyList(),
     val type: NameToken? = null,
     val body: Body? = null
-) : DefinitionNode {
-    constructor(
-        name: String,
-        parameters: List<ParameterNode> = emptyList(),
-        type: String? = null,
-        body: List<Statement> = emptyList()
-    ) : this(NameToken(name), parameters, type?.let { NameToken(it) }, MultiStatementNode(body))
+) : DefinitionNode
 
-    constructor(
-        name: String,
-        parameters: List<ParameterNode> = emptyList(),
-        type: String? = null,
-        body: Expression
-    ) : this(NameToken(name), parameters, type?.let { NameToken(it) }, SingleExpressionNode(body))
-}
-
-data class ParameterNode(
-    val name: NameToken, val type: NameToken, val defaultValue: Expression? = null
-) : Node
+data class ParameterNode(val name: NameToken, val type: NameToken, val defaultValue: Expression? = null) : Node
 
 interface Body: Node
 
