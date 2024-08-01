@@ -51,9 +51,9 @@ class Parser {
         val type = if (tokens.test(":")) readType(tokens) else null
 
         val body = when (tokens.next().data) {
-            "{" -> tokens.collect(delimiter = "}") { readStatement(it) }
-            "=>", "->" -> listOf(readStatement(tokens))
-            else -> emptyList()
+            "{" -> MultiStatementNode(tokens.collect(delimiter = "}") { readStatement(it) })
+            "=>", "->" -> SingleExpressionNode(readExpression(tokens))
+            else -> null
         }
 
         return FunctionDefinitionNode(name, parameters, type, body)

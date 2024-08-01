@@ -28,16 +28,33 @@ data class FunctionDefinitionNode(
     val name: NameToken,
     val parameters: List<ParameterNode> = emptyList(),
     val type: NameToken? = null,
-    val body: List<Statement> = emptyList()
+    val body: Body? = null
 ) : DefinitionNode {
     constructor(
         name: String,
         parameters: List<ParameterNode> = emptyList(),
         type: String? = null,
         body: List<Statement> = emptyList()
-    ) : this(NameToken(name), parameters, type?.let { NameToken(it) }, body)
+    ) : this(NameToken(name), parameters, type?.let { NameToken(it) }, MultiStatementNode(body))
+
+    constructor(
+        name: String,
+        parameters: List<ParameterNode> = emptyList(),
+        type: String? = null,
+        body: Expression
+    ) : this(NameToken(name), parameters, type?.let { NameToken(it) }, SingleExpressionNode(body))
 }
 
 data class ParameterNode(
     val name: NameToken, val type: NameToken, val defaultValue: Expression? = null
 ) : Node
+
+interface Body: Node
+
+data class SingleExpressionNode(val expression: Expression) : Body {
+    override fun toString(): String = "$expression"
+}
+
+data class MultiStatementNode(val statements: List<Statement> = emptyList()) : Body{
+    override fun toString(): String = "$statements"
+}

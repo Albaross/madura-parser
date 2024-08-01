@@ -55,7 +55,7 @@ internal class ParserTest {
             SymbolToken('}')
         )
         val result = parser.readFile(emptyMain)
-        assertEquals(FileNode(definitions = listOf(FunctionDefinitionNode("main"))), result)
+        assertEquals(FileNode(definitions = listOf(FunctionDefinitionNode("main", body = emptyList()))), result)
     }
 
     @Test
@@ -121,7 +121,7 @@ internal class ParserTest {
                 definitions = listOf(
                     FunctionDefinitionNode(
                         "main",
-                        body = listOf(FunctionCall("println", arguments = listOf(Constant("\"Hello world\""))))
+                        body = FunctionCall("println", arguments = listOf(Constant("\"Hello world\"")))
                     )
                 )
             ), result
