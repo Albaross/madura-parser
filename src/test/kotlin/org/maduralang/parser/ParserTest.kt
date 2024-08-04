@@ -138,6 +138,8 @@ internal class ParserTest {
             NameToken("calc"),
             SymbolToken('('),
             SymbolToken(')'),
+            SymbolToken(':'),
+            NameToken("I32"),
             SymbolToken("=>"),
             NumberToken("1"),
             SymbolToken('+'),
@@ -152,6 +154,7 @@ internal class ParserTest {
                 definitions = listOf(
                     functionDefinition(
                         "calc",
+                        type = "I32",
                         body = arithmetic('+', constant(1), arithmetic('*', constant(2), constant(3)))
                     )
                 )
@@ -166,6 +169,8 @@ internal class ParserTest {
             NameToken("calc"),
             SymbolToken('('),
             SymbolToken(')'),
+            SymbolToken(':'),
+            NameToken("I32"),
             SymbolToken("=>"),
             SymbolToken('('),
             NumberToken("1"),
@@ -182,6 +187,7 @@ internal class ParserTest {
                 definitions = listOf(
                     functionDefinition(
                         "calc",
+                        type = "I32",
                         body = arithmetic('*', arithmetic('+', constant(1), constant(2)), constant(3))
                     )
                 )
