@@ -8,5 +8,5 @@ data class Arithmetic(
     val expr2: Expression
 ) : Expression {
 
-    override fun toString(): String = "$expr1 ${op.data} $expr2"
+    override fun toString(): String = "($expr1 ${op.data} $expr2)"
 }

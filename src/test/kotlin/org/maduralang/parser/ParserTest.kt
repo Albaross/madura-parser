@@ -16,8 +16,11 @@ internal class ParserTest {
             SymbolToken('='),
             NumberToken("3.14")
         )
-        val result = parser.readVariableDeclaration(emptyMain)
-        assertEquals(variableDeclaration(name = "PI", expression = constant(3.14)), result)
+        val result = parser.readFile(emptyMain)
+        assertEquals(
+            FileNode(definitions = listOf(variableDeclaration(name = "PI", expression = constant(3.14)))),
+            result
+        )
     }
 
     @Test
@@ -30,14 +33,19 @@ internal class ParserTest {
             SymbolToken('='),
             KeywordToken.TRUE
         )
-        val result = parser.readVariableDeclaration(constant)
+        val result = parser.readFile(constant)
         assertEquals(
-            variableDeclaration(
-                name = "enabled",
-                type = "Bool",
-                expression = constant(true),
-                mutable = true
-            ), result
+            FileNode(
+                definitions = listOf(
+                    variableDeclaration(
+                        name = "enabled",
+                        type = "Bool",
+                        expression = constant(true),
+                        mutable = true
+                    )
+                )
+            ),
+            result
         )
     }
 
@@ -117,6 +125,64 @@ internal class ParserTest {
                     functionDefinition(
                         "main",
                         body = functionCall("println", arguments = listOf(constant("\"Hello world\"")))
+                    )
+                )
+            ), result
+        )
+    }
+
+    @Test
+    fun `should consider operator precedence`() {
+        val calculation = sourceOf(
+            KeywordToken.FN,
+            NameToken("calc"),
+            SymbolToken('('),
+            SymbolToken(')'),
+            SymbolToken("=>"),
+            NumberToken("1"),
+            SymbolToken('+'),
+            NumberToken("2"),
+            SymbolToken('*'),
+            NumberToken("3")
+        )
+
+        val result = parser.readFile(calculation)
+        assertEquals(
+            FileNode(
+                definitions = listOf(
+                    functionDefinition(
+                        "calc",
+                        body = arithmetic('+', constant(1), arithmetic('*', constant(2), constant(3)))
+                    )
+                )
+            ), result
+        )
+    }
+
+    @Test
+    fun `should consider parantheses`() {
+        val calculation = sourceOf(
+            KeywordToken.FN,
+            NameToken("calc"),
+            SymbolToken('('),
+            SymbolToken(')'),
+            SymbolToken("=>"),
+            SymbolToken('('),
+            NumberToken("1"),
+            SymbolToken('+'),
+            NumberToken("2"),
+            SymbolToken(')'),
+            SymbolToken('*'),
+            NumberToken("3")
+        )
+
+        val result = parser.readFile(calculation)
+        assertEquals(
+            FileNode(
+                definitions = listOf(
+                    functionDefinition(
+                        "calc",
+                        body = arithmetic('*', arithmetic('+', constant(1), constant(2)), constant(3))
                     )
                 )
             ), result

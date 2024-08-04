@@ -34,7 +34,7 @@ class Parser {
         }
     }
 
-    fun readVariableDeclaration(tokens: TokenSource): VariableDeclarationNode {
+    private fun readVariableDeclaration(tokens: TokenSource): VariableDeclarationNode {
         val mutable = (tokens.match(KeywordToken::class) != CONST)
         val name = tokens.match(NameToken::class)
         val type = if (tokens.test(":")) readType(tokens) else null
@@ -43,7 +43,7 @@ class Parser {
         return VariableDeclarationNode(name, type, value, mutable)
     }
 
-    fun readFunctionDefinition(tokens: TokenSource): FunctionDefinitionNode {
+    private fun readFunctionDefinition(tokens: TokenSource): FunctionDefinitionNode {
         tokens.next()
         val name = tokens.match(NameToken::class)
         tokens.match("(")
@@ -81,31 +81,41 @@ class Parser {
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    fun readExpression(tokens: TokenSource): Expression = handleLogicalOr(tokens)
+    private fun readExpression(tokens: TokenSource): Expression = handleLogicalOr(tokens)
 
-    private fun handleLogicalOr(tokens: TokenSource) =
+    private fun handleLogicalOr(tokens: TokenSource): Expression =
         binary(tokens, ::Or, setOf("||", "|"), ::handleLogicalAnd)
 
-    private fun handleLogicalAnd(tokens: TokenSource) =
+    private fun handleLogicalAnd(tokens: TokenSource): Expression =
         binary(tokens, ::And, setOf("&&", "&"), ::handleEquality)
 
-    private fun handleEquality(tokens: TokenSource) =
+    private fun handleEquality(tokens: TokenSource): Expression =
         binary(tokens, ::Relation, setOf("==", "!=", "===", "!=="), ::handleComparison)
 
-    private fun handleComparison(tokens: TokenSource) =
+    private fun handleComparison(tokens: TokenSource): Expression =
         binary(tokens, ::Relation, setOf("<", ">", "<=", ">="), ::handleAddition)
 
-    private fun handleAddition(tokens: TokenSource) =
+    private fun handleAddition(tokens: TokenSource): Expression =
         binary(tokens, ::Arithmetic, setOf("+", "-"), ::handleMultiplication)
 
-    private fun handleMultiplication(tokens: TokenSource) =
+    private fun handleMultiplication(tokens: TokenSource): Expression =
         binary(tokens, ::Arithmetic, setOf("*", "/", "%"), ::handlePower)
 
-    private fun handlePower(tokens: TokenSource) =
+    private fun handlePower(tokens: TokenSource): Expression =
         binary(tokens, ::Arithmetic, setOf("^"), ::handleChainCall)
 
-    private fun handleChainCall(tokens: TokenSource) =
-        binary(tokens, ::ChainCall, setOf(".", "?.", "::"), ::readElement)
+    private fun handleChainCall(tokens: TokenSource): Expression =
+        binary(tokens, ::ChainCall, setOf(".", "?.", "::"), ::handleParentheses)
+
+    private fun handleParentheses(tokens: TokenSource): Expression {
+        if (tokens.test("(")) {
+            val result = readExpression(tokens)
+            tokens.match(")")
+            return result
+        }
+
+        return readElement(tokens)
+    }
 
     private fun readElement(tokens: TokenSource) = when (val token = tokens.lookahead()) {
         is NumberToken, is StringToken, TRUE, FALSE -> Constant(tokens.next())
