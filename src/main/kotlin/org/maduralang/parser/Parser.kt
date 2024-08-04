@@ -81,24 +81,31 @@ class Parser {
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    fun readExpression(tokens: TokenSource): Expression =
-        binary(tokens, ::Or, setOf("||", "|")) {
-            binary(tokens, ::And, setOf("&&", "&")) {
-                binary(tokens, ::Relation, setOf("==", "!=", "===", "!==")) {
-                    binary(tokens, ::Relation, setOf("<", ">", "<=", ">=")) {
-                        binary(tokens, ::Arithmetic, setOf("+", "-")) {
-                            binary(tokens, ::Arithmetic, setOf("*", "/", "%")) {
-                                binary(tokens, ::Arithmetic, setOf("^")) {
-                                    binary(tokens, ::ChainCall, setOf(".", "?.", "::")) {
-                                        readElement(tokens)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    fun readExpression(tokens: TokenSource): Expression = handleLogicalOr(tokens)
+
+    private fun handleLogicalOr(tokens: TokenSource) =
+        binary(tokens, ::Or, setOf("||", "|"), ::handleLogicalAnd)
+
+    private fun handleLogicalAnd(tokens: TokenSource) =
+        binary(tokens, ::And, setOf("&&", "&"), ::handleEquality)
+
+    private fun handleEquality(tokens: TokenSource) =
+        binary(tokens, ::Relation, setOf("==", "!=", "===", "!=="), ::handleComparison)
+
+    private fun handleComparison(tokens: TokenSource) =
+        binary(tokens, ::Relation, setOf("<", ">", "<=", ">="), ::handleAddition)
+
+    private fun handleAddition(tokens: TokenSource) =
+        binary(tokens, ::Arithmetic, setOf("+", "-"), ::handleMultiplication)
+
+    private fun handleMultiplication(tokens: TokenSource) =
+        binary(tokens, ::Arithmetic, setOf("*", "/", "%"), ::handlePower)
+
+    private fun handlePower(tokens: TokenSource) =
+        binary(tokens, ::Arithmetic, setOf("^"), ::handleChainCall)
+
+    private fun handleChainCall(tokens: TokenSource) =
+        binary(tokens, ::ChainCall, setOf(".", "?.", "::"), ::readElement)
 
     private fun readElement(tokens: TokenSource) = when (val token = tokens.lookahead()) {
         is NumberToken, is StringToken, TRUE, FALSE -> Constant(tokens.next())
@@ -118,14 +125,14 @@ class Parser {
         return Id(name)
     }
 
-    private fun binary(
+    private inline fun binary(
         tokens: TokenSource,
         operation: (Token, Expression, Expression) -> Expression,
         symbols: Set<String>,
         element: (TokenSource) -> Expression
     ): Expression {
 
-        var expr = element(tokens) //
+        var expr = element(tokens)
         while (tokens.test(consume = false) { it.data in symbols })
             expr = operation(tokens.next(), expr, element(tokens))
 
