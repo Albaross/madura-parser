@@ -81,7 +81,10 @@ class Parser {
             else -> throw InvalidSyntaxException("syntax error", token)
         }
 
-    private fun readExpression(tokens: TokenSource): Expression = handleLogicalOr(tokens)
+    private fun readExpression(tokens: TokenSource): Expression = handleElvis(tokens)
+
+    private fun handleElvis(tokens: TokenSource):Expression =
+        binary(tokens, ::ChainCall, setOf("?:"), ::handleLogicalOr)
 
     private fun handleLogicalOr(tokens: TokenSource): Expression =
         binary(tokens, ::Or, setOf("||", "|"), ::handleLogicalAnd)
@@ -93,7 +96,10 @@ class Parser {
         binary(tokens, ::Relation, setOf("==", "!=", "===", "!=="), ::handleComparison)
 
     private fun handleComparison(tokens: TokenSource): Expression =
-        binary(tokens, ::Relation, setOf("<", ">", "<=", ">="), ::handleAddition)
+        binary(tokens, ::Relation, setOf("<", ">", "<=", ">=", "in", "is", "as"), ::handleShift)
+
+    private fun handleShift(tokens: TokenSource): Expression =
+        binary(tokens, ::Arithmetic, setOf("<<", ">>", ">>>"), ::handleAddition)
 
     private fun handleAddition(tokens: TokenSource): Expression =
         binary(tokens, ::Arithmetic, setOf("+", "-"), ::handleMultiplication)
